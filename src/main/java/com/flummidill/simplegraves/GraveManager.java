@@ -353,6 +353,50 @@ public class GraveManager {
         return future;
     }
 
+    public CompletableFuture<List<ItemStack>> getGraveItems(UUID uuid, int graveNum) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<ItemStack> items = new ArrayList<>();
+
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT items FROM graves WHERE uuid = ? AND grave_num = ?")) {
+
+                ps.setString(1, uuid.toString());
+                ps.setInt(2, graveNum);
+
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.next()) {
+                    String serializedItems = rs.getString("items");
+
+                    if (serializedItems != null && !serializedItems.isEmpty()) {
+                        String[] base64Items = serializedItems.split("\\|");
+
+                        for (String base64 : base64Items) {
+                            if (base64.isEmpty()) continue;
+
+                            try (ByteArrayInputStream bais = new ByteArrayInputStream(Base64.getDecoder().decode(base64));
+                                 BukkitObjectInputStream ois = new BukkitObjectInputStream(bais)) {
+
+                                ItemStack item = (ItemStack) ois.readObject();
+                                if (item != null && item.getType() != Material.AIR) {
+                                    items.add(item);
+                                }
+
+                            } catch (IOException | ClassNotFoundException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            return items;
+        }, dbWorker);
+    }
+
     public CompletableFuture<List<Location>> getAllGraveLocations(UUID uuid) {
         final UUID finalUUID = uuid;
         CompletableFuture<List<Location>> future = new CompletableFuture<>();

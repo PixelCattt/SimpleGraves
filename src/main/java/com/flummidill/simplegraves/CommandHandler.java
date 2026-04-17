@@ -3,6 +3,7 @@ package com.flummidill.simplegraves;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import java.util.*;
 
 
@@ -104,13 +105,24 @@ public class CommandHandler implements CommandExecutor {
                     default -> worldName = location.getWorld().getName();
                 }
 
-                Bukkit.getScheduler().runTask(plugin, () ->
+                manager.getGraveItems(targetUUID, graveNumber).thenAccept(items -> {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
                         player.sendMessage("§aGrave #" + graveNumber + " is Located at:" +
                                 "\n§9World: §c" + worldName +
                                 "\n§9X: §c" + Math.floor(location.getX()) +
                                 "\n§9Y: §c" + Math.floor(location.getY()) +
-                                "\n§9Z: §c" + Math.floor(location.getZ()))
-                );
+                                "\n§9Z: §c" + Math.floor(location.getZ()));
+
+                        if (items.isEmpty()) {
+                            player.sendMessage("The grave is empty!");
+                        } else {
+                            player.sendMessage("§6Items:");
+                            for (ItemStack item : items) {
+                                player.sendMessage("" + item.getType().name() + " (" + item.getAmount() + "x)");
+                            }
+                        }
+                    });
+                });
             });
         });
 
@@ -251,12 +263,25 @@ public class CommandHandler implements CommandExecutor {
                                 case "world_the_end" -> worldName = "The End";
                                 default -> worldName = location.getWorld().getName();
                             }
-                            Bukkit.getScheduler().runTask(plugin, () ->
+
+                            manager.getGraveItems(targetUUID, finalGraveNumber).thenAccept(items -> {
+                                Bukkit.getScheduler().runTask(plugin, () -> {
                                     sender.sendMessage("§a" + targetNameFinal + "'s Grave #" + finalGraveNumber + " is Located at:" +
                                             "\n§9World: §c" + worldName +
                                             "\n§9X: §c" + Math.floor(location.getX()) +
                                             "\n§9Y: §c" + Math.floor(location.getY()) +
-                                            "\n§9Z: §c" + Math.floor(location.getZ())));
+                                            "\n§9Z: §c" + Math.floor(location.getZ()));
+
+                                    if (items.isEmpty()) {
+                                        sender.sendMessage("The grave is empty!");
+                                    } else {
+                                        sender.sendMessage("§6Items:");
+                                        for (ItemStack item : items) {
+                                            sender.sendMessage(item.getType().name() + " (" + item.getAmount() + "x)");
+                                        }
+                                    }
+                                });
+                            });
                         });
                     });
                     break;
@@ -360,12 +385,25 @@ public class CommandHandler implements CommandExecutor {
                                     case "world_the_end" -> worldName = "The End";
                                     default -> worldName = location.getWorld().getName();
                                 }
-                                Bukkit.getScheduler().runTask(plugin, () ->
+
+                                manager.getGraveItems(targetUUID, finalGraveNumber).thenAccept(items -> {
+                                    Bukkit.getScheduler().runTask(plugin, () -> {
                                         sender.sendMessage("§a" + targetName + "'s Grave #" + finalGraveNumber + " is Located at:" +
                                                 "\n§9World: §c" + worldName +
                                                 "\n§9X: §c" + Math.floor(location.getX()) +
                                                 "\n§9Y: §c" + Math.floor(location.getY()) +
-                                                "\n§9Z: §c" + Math.floor(location.getZ())));
+                                                "\n§9Z: §c" + Math.floor(location.getZ()));
+
+                                        if (items.isEmpty()) {
+                                            sender.sendMessage("§7(empty)");
+                                        } else {
+                                            for (ItemStack item : items) {
+                                                sender.sendMessage("§6Items:");
+                                                sender.sendMessage(item.getType().name() + " (" + item.getAmount() + "x)");
+                                            }
+                                        }
+                                    });
+                                });
                             });
                         });
                         break;

@@ -1,4 +1,4 @@
-package com.flummidill.simplegraves;
+package com.pixelcatt.simplegraves;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

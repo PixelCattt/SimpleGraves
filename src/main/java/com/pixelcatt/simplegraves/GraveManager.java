@@ -1,4 +1,4 @@
-package com.flummidill.simplegraves;
+package com.pixelcatt.simplegraves;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;

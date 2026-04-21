@@ -1,4 +1,4 @@
-package com.flummidill.simplegraves;
+package com.pixelcatt.simplegraves;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;

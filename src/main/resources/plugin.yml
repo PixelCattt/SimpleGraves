@@ -1,5 +1,5 @@
 name: SimpleGraves
-main: com.flummidill.simplegraves.SimpleGraves
+main: com.pixelcatt.simplegraves.SimpleGraves
 version: ${project.version}
 api-version: 1.13
 commands:

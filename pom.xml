@@ -4,7 +4,7 @@
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.flummidill.simplegraves</groupId>
+    <groupId>com.pixelcatt.simplegraves</groupId>
     <artifactId>SimpleGraves</artifactId>
     <version>1.4.1</version>
     <packaging>jar</packaging>
@@ -78,7 +78,7 @@
                             <relocations>
                                 <relocation>
                                     <pattern>org.json</pattern>
-                                    <shadedPattern>com.flummidill.libs.json</shadedPattern>
+                                    <shadedPattern>com.pixelcatt.libs.json</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

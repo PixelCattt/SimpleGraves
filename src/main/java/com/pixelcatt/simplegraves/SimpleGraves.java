@@ -1,6 +1,5 @@
-package com.flummidill.simplegraves;
+package com.pixelcatt.simplegraves;
 
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -27,7 +26,7 @@ public class SimpleGraves extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        getLogger().info("~ Created by Flummidill ~");
+        getLogger().info("~ Created by PixelCatt ~");
 
         // Initialize Database-Worker
         getLogger().info("Initializing Database-Worker...");

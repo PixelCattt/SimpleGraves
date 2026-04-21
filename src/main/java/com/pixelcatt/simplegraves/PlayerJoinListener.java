@@ -1,4 +1,4 @@
-package com.flummidill.simplegraves;
+package com.pixelcatt.simplegraves;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -85,7 +85,7 @@ public class PlayerJoinListener implements Listener {
             Text2.setUnderlined(true);
             Text2.setClickEvent(new ClickEvent(
                 ClickEvent.Action.OPEN_URL,
-                "https://github.com/Flummidill/SimpleGraves/releases/latest"
+                "https://modrinth.com/plugin/simple_graves/versions"
             ));
             message2.addExtra(Text2);
 

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/Flummidill/SimpleGraves/blob/HEAD/icons/SimpleGraves-250x250.png?raw=true" alt="SimpleGraves-Icon">
+  <img src="https://github.com/PixelCattt/SimpleGraves/blob/HEAD/icons/SimpleGraves-250x250.png?raw=true" alt="SimpleGraves-Icon">
   
   <h1>SimpleGraves</h1>
   <a href="https://modrinth.com/plugin/simple_graves/versions">

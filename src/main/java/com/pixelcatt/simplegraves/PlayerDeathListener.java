@@ -1,4 +1,4 @@
-package com.flummidill.simplegraves;
+package com.pixelcatt.simplegraves;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -64,6 +64,10 @@ public class PlayerDeathListener implements Listener {
         );
 
         World world = graveLocation.getWorld();
+
+        if (world == null) {
+            return null;
+        }
 
         if (baseY > world.getMaxHeight()) {
             baseY = world.getMaxHeight() - 1;

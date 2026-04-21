@@ -1,7 +1,7 @@
 name: SimpleGraves
 main: com.pixelcatt.simplegraves.SimpleGraves
 version: ${project.version}
-api-version: 1.13
+api-version: 1.21
 commands:
   graveinfo:
     description: See Information about your Grave.

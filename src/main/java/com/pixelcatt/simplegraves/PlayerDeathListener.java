@@ -190,13 +190,10 @@ public class PlayerDeathListener implements Listener {
                 Material.STRUCTURE_BLOCK,
                 Material.JIGSAW,
                 Material.BARRIER,
-                Material.STRUCTURE_VOID
+                Material.STRUCTURE_VOID,
+                Material.TEST_INSTANCE_BLOCK,
+                Material.TEST_BLOCK
         ));
-
-        if(plugin.isNewerVersion(plugin.getServer().getVersion().split("\\(MC: ")[1].split("\\)")[0], "1.21.4")) {
-            UNSAFE_BLOCKS.add(Material.TEST_INSTANCE_BLOCK);
-            UNSAFE_BLOCKS.add(Material.TEST_BLOCK);
-        }
 
         if (UNSAFE_BLOCKS.contains(type) || manager.graveExistsLoc(block.getLocation())) return false;
 

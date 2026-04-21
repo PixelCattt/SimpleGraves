@@ -57,7 +57,7 @@ public class SimpleGraves extends JavaPlugin {
         BukkitRunnable onLoad = new BukkitRunnable() {
             @Override
             public void run() {
-                executeConsoleCommand("gamerule keepInventory true");
+                executeConsoleCommand("gamerule keep_inventory true");
             }
         };
         onLoad.runTaskLater(this, 1L);
@@ -129,9 +129,11 @@ public class SimpleGraves extends JavaPlugin {
         TabCompleter tabCompleter = new TabCompleter(this, this.manager);
 
         getCommand("graveinfo").setExecutor(commandHandler);
+        getCommand("graveitems").setExecutor(commandHandler);
         getCommand("graveadmin").setExecutor(commandHandler);
 
         getCommand("graveinfo").setTabCompleter(tabCompleter);
+        getCommand("graveitems").setTabCompleter(tabCompleter);
         getCommand("graveadmin").setTabCompleter(tabCompleter);
     }
 

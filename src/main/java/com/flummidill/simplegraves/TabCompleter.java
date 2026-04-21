@@ -31,8 +31,8 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
             String cmd = command.getName().toLowerCase();
 
             switch (cmd) {
-                case "graveinfo":
-                    return autocompleteGraveInfo(player, args);
+                case "graveinfo", "graveitems":
+                    return autocompleteGraveInfoAndItems(player, args);
                 case "graveadmin":
                     return autocompleteGraveAdmin(player, args);
 
@@ -44,7 +44,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
         }
     }
 
-    private List<String> autocompleteGraveInfo(Player player, String[] args) {
+    private List<String> autocompleteGraveInfoAndItems(Player player, String[] args) {
         if (args.length == 1) {
             return manager.getGraveNumberList(player.getUniqueId());
         }
@@ -61,6 +61,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
             if (sender.hasPermission("simplegraves.graveadmin.go")) subcommands.add("go");
             if (sender.hasPermission("simplegraves.graveadmin.list")) subcommands.add("list");
             if (sender.hasPermission("simplegraves.graveadmin.info")) subcommands.add("info");
+            if (sender.hasPermission("simplegraves.graveadmin.items")) subcommands.add("items");
             if (sender.hasPermission("simplegraves.graveadmin.remove")) subcommands.add("remove");
 
             if (prefix.isEmpty()) {

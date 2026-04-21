@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
 import java.util.*;
 
 
@@ -50,6 +51,21 @@ public class CommandHandler implements CommandExecutor {
 
                 return  handleGraveInfo(player, args);
 
+            case "graveitems":
+                if (!player.hasPermission("simplegraves.graveitems")) {
+                    player.sendMessage("§cYou don’t have permission to use this command.");
+
+                    return true;
+                }
+
+                if (!(args.length == 1)) {
+                    player.sendMessage("Usage: /graveitems <number>");
+
+                    return true;
+                }
+
+                return  handleGraveItems(player, args);
+
             case "graveadmin":
                 if (!player.hasPermission("simplegraves.graveadmin.show")) {
                     player.sendMessage("§cYou don’t have permission to use this command.");
@@ -58,14 +74,14 @@ public class CommandHandler implements CommandExecutor {
                 }
 
                 if (!(args.length == 2 || args.length == 3)) {
-                    player.sendMessage("Usage: /graveadmin <go|list|info|delete> [<player>] [<number>]");
+                    player.sendMessage("Usage: /graveadmin <go|list|info|items|remove> [<player>] [<number>]");
                     return true;
                 }
 
                 return handleGraveAdmin(player, args);
 
             default:
-                player.sendMessage("Usage: /graveadmin <go|list|info|delete> [<player>] [<number>]");
+                player.sendMessage("Usage: /graveadmin <go|list|info|items|remove> [<player>] [<number>]");
                 return true;
         }
     }
@@ -105,24 +121,68 @@ public class CommandHandler implements CommandExecutor {
                     default -> worldName = location.getWorld().getName();
                 }
 
-                manager.getGraveItems(targetUUID, graveNumber).thenAccept(items -> {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
+                Bukkit.getScheduler().runTask(plugin, () ->
                         player.sendMessage("§aGrave #" + graveNumber + " is Located at:" +
                                 "\n§9World: §c" + worldName +
                                 "\n§9X: §c" + Math.floor(location.getX()) +
                                 "\n§9Y: §c" + Math.floor(location.getY()) +
-                                "\n§9Z: §c" + Math.floor(location.getZ()));
+                                "\n§9Z: §c" + Math.floor(location.getZ()))
+                );
+            });
+        });
 
-                        if (items.isEmpty()) {
-                            player.sendMessage("The grave is empty!");
-                        } else {
-                            player.sendMessage("§6Items:");
-                            for (ItemStack item : items) {
-                                player.sendMessage("" + item.getType().name() + " (" + item.getAmount() + "x)");
-                            }
+        return true;
+    }
+
+    private boolean handleGraveItems(Player player, String[] args) {
+        UUID targetUUID = player.getUniqueId();
+        int graveNumber;
+
+        try {
+            graveNumber = Integer.parseInt(args[0]);
+        } catch (NumberFormatException e) {
+            player.sendMessage("§cGrave must be a Number.");
+            return true;
+        }
+
+        manager.graveExistsUUID(targetUUID, graveNumber).thenAccept(exists -> {
+            if (!exists) {
+                Bukkit.getScheduler().runTask(plugin, () ->
+                        player.sendMessage("§cYou don't have a Grave with Number #" + graveNumber)
+                );
+                return;
+            }
+
+            manager.getGraveItems(targetUUID, graveNumber).thenAccept(itemStacks -> {
+                if (itemStacks.isEmpty()) {
+                    player.sendMessage("§cGrave #" + graveNumber + " has no Items!");
+                } else {
+                    Map<String, Integer> graveItems = new HashMap<>();
+                    for (ItemStack itemStack : itemStacks) {
+                        graveItems.merge(itemStack.getType().name(), itemStack.getAmount(), Integer::sum);
+                    }
+
+                    if (graveItems.isEmpty()) {
+                        Bukkit.getScheduler().runTask(plugin, () ->
+                                player.sendMessage("§cGrave #" + graveNumber + " has no Items!")
+                        );
+                        return;
+                    }
+
+                    StringBuilder itemsMessage = new StringBuilder("§c");
+                    for (Map.Entry<String, Integer> entry : graveItems.entrySet()) {
+                        if (!itemsMessage.toString().equals("§c")) {
+                            itemsMessage.append(", ");
                         }
+
+                        itemsMessage.append(entry.getKey()).append(" (x").append(entry.getValue()).append(")");
+                    }
+
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage("§aGrave #" + graveNumber + " has the following Items:");
+                        player.sendMessage(itemsMessage.toString());
                     });
-                });
+                }
             });
         });
 
@@ -153,6 +213,12 @@ public class CommandHandler implements CommandExecutor {
                     return true;
                 }
                 break;
+            case "items":
+                if (!sender.hasPermission("simplegraves.graveadmin.items")) {
+                    sender.sendMessage("§cYou don’t have permission to use this command.");
+                    return true;
+                }
+                break;
             case "remove":
                 if (!sender.hasPermission("simplegraves.graveadmin.remove")) {
                     sender.sendMessage("§cYou don’t have permission to use this command.");
@@ -160,7 +226,7 @@ public class CommandHandler implements CommandExecutor {
                 }
                 break;
             default:
-                sender.sendMessage("Usage: /graveadmin <go|list|info|remove> [<player>] [<number>]");
+                sender.sendMessage("Usage: /graveadmin <go|list|info|items|remove> [<player>] [<number>]");
                 return true;
         }
 
@@ -235,10 +301,8 @@ public class CommandHandler implements CommandExecutor {
                             if (graveList.isEmpty()) {
                                 sender.sendMessage("§c" + targetNameFinal + " currently has no Graves.");
                             } else {
-                                sender.sendMessage("§a" + targetNameFinal + "'s Grave List:");
-                                for (String graveNum : graveList) {
-                                    sender.sendMessage("§c#" + graveNum);
-                                }
+                                sender.sendMessage("§a" + targetNameFinal + " has the following Graves:");
+                                sender.sendMessage("§c#" + String.join(", #", graveList));
                             }
                         });
                     });
@@ -263,25 +327,54 @@ public class CommandHandler implements CommandExecutor {
                                 case "world_the_end" -> worldName = "The End";
                                 default -> worldName = location.getWorld().getName();
                             }
-
-                            manager.getGraveItems(targetUUID, finalGraveNumber).thenAccept(items -> {
-                                Bukkit.getScheduler().runTask(plugin, () -> {
+                            Bukkit.getScheduler().runTask(plugin, () ->
                                     sender.sendMessage("§a" + targetNameFinal + "'s Grave #" + finalGraveNumber + " is Located at:" +
                                             "\n§9World: §c" + worldName +
                                             "\n§9X: §c" + Math.floor(location.getX()) +
                                             "\n§9Y: §c" + Math.floor(location.getY()) +
-                                            "\n§9Z: §c" + Math.floor(location.getZ()));
+                                            "\n§9Z: §c" + Math.floor(location.getZ())));
+                        });
+                    });
+                    break;
+                case "items":
+                    manager.graveExistsUUID(targetUUID, graveNumber).thenAccept(exists -> {
+                        if (!exists) {
+                            Bukkit.getScheduler().runTask(plugin, () ->
+                                    sender.sendMessage("§c" + targetNameFinal + " doesn't have a Grave with Number #" + finalGraveNumber)
+                            );
+                            return;
+                        }
 
-                                    if (items.isEmpty()) {
-                                        sender.sendMessage("The grave is empty!");
-                                    } else {
-                                        sender.sendMessage("§6Items:");
-                                        for (ItemStack item : items) {
-                                            sender.sendMessage(item.getType().name() + " (" + item.getAmount() + "x)");
-                                        }
+                        manager.getGraveItems(targetUUID, finalGraveNumber).thenAccept(itemStacks -> {
+                            if (itemStacks.isEmpty()) {
+                                sender.sendMessage("§cGrave #" + finalGraveNumber + " has no Items!");
+                            } else {
+                                Map<String, Integer> graveItems = new HashMap<>();
+                                for (ItemStack itemStack : itemStacks) {
+                                    graveItems.merge(itemStack.getType().name(), itemStack.getAmount(), Integer::sum);
+                                }
+
+                                if (graveItems.isEmpty()) {
+                                    Bukkit.getScheduler().runTask(plugin, () ->
+                                            sender.sendMessage("§c" + targetNameFinal + "'s Grave #" + finalGraveNumber + " has no Items!")
+                                    );
+                                    return;
+                                }
+
+                                StringBuilder itemsMessage = new StringBuilder("§c");
+                                for (Map.Entry<String, Integer> entry : graveItems.entrySet()) {
+                                    if (!itemsMessage.toString().equals("§c")) {
+                                        itemsMessage.append(", ");
                                     }
+
+                                    itemsMessage.append(entry.getKey()).append(" (x").append(entry.getValue()).append(")");
+                                }
+
+                                Bukkit.getScheduler().runTask(plugin, () -> {
+                                    sender.sendMessage("§a" + targetNameFinal + "'s Grave #" + finalGraveNumber + " has the following Items:");
+                                    sender.sendMessage(itemsMessage.toString());
                                 });
-                            });
+                            }
                         });
                     });
                     break;
@@ -357,10 +450,8 @@ public class CommandHandler implements CommandExecutor {
                                 if (graveList.isEmpty()) {
                                     sender.sendMessage("§c" + targetName + " currently has no Graves.");
                                 } else {
-                                    sender.sendMessage("§a" + targetName + "'s Grave List:");
-                                    for (String graveNum : graveList) {
-                                        sender.sendMessage("§c#" + graveNum);
-                                    }
+                                    sender.sendMessage("§a" + targetName + " has the following Graves:");
+                                    sender.sendMessage("§c#" + String.join(", #", graveList));
                                 }
                             });
                         });
@@ -385,25 +476,54 @@ public class CommandHandler implements CommandExecutor {
                                     case "world_the_end" -> worldName = "The End";
                                     default -> worldName = location.getWorld().getName();
                                 }
-
-                                manager.getGraveItems(targetUUID, finalGraveNumber).thenAccept(items -> {
-                                    Bukkit.getScheduler().runTask(plugin, () -> {
+                                Bukkit.getScheduler().runTask(plugin, () ->
                                         sender.sendMessage("§a" + targetName + "'s Grave #" + finalGraveNumber + " is Located at:" +
                                                 "\n§9World: §c" + worldName +
                                                 "\n§9X: §c" + Math.floor(location.getX()) +
                                                 "\n§9Y: §c" + Math.floor(location.getY()) +
-                                                "\n§9Z: §c" + Math.floor(location.getZ()));
+                                                "\n§9Z: §c" + Math.floor(location.getZ())));
+                            });
+                        });
+                        break;
+                    case "items":
+                        manager.graveExistsUUID(targetUUID, graveNumber).thenAccept(exists -> {
+                            if (!exists) {
+                                Bukkit.getScheduler().runTask(plugin, () ->
+                                        sender.sendMessage("§c" + targetName + " doesn't have a Grave with Number #" + finalGraveNumber)
+                                );
+                                return;
+                            }
 
-                                        if (items.isEmpty()) {
-                                            sender.sendMessage("§7(empty)");
-                                        } else {
-                                            for (ItemStack item : items) {
-                                                sender.sendMessage("§6Items:");
-                                                sender.sendMessage(item.getType().name() + " (" + item.getAmount() + "x)");
-                                            }
+                            manager.getGraveItems(targetUUID, finalGraveNumber).thenAccept(itemStacks -> {
+                                if (itemStacks.isEmpty()) {
+                                    sender.sendMessage("§cGrave #" + finalGraveNumber + " has no Items!");
+                                } else {
+                                    Map<String, Integer> graveItems = new HashMap<>();
+                                    for (ItemStack itemStack : itemStacks) {
+                                        graveItems.merge(itemStack.getType().name(), itemStack.getAmount(), Integer::sum);
+                                    }
+
+                                    if (graveItems.isEmpty()) {
+                                        Bukkit.getScheduler().runTask(plugin, () ->
+                                                sender.sendMessage("§c" + targetName + "'s Grave #" + finalGraveNumber + " has no Items!")
+                                        );
+                                        return;
+                                    }
+
+                                    StringBuilder itemsMessage = new StringBuilder("§c");
+                                    for (Map.Entry<String, Integer> entry : graveItems.entrySet()) {
+                                        if (!itemsMessage.toString().equals("§c")) {
+                                            itemsMessage.append(", ");
                                         }
+
+                                        itemsMessage.append(entry.getKey()).append(" (x").append(entry.getValue()).append(")");
+                                    }
+
+                                    Bukkit.getScheduler().runTask(plugin, () -> {
+                                        sender.sendMessage("§a" + targetName + "'s Grave #" + finalGraveNumber + " has the following Items:");
+                                        sender.sendMessage(itemsMessage.toString());
                                     });
-                                });
+                                }
                             });
                         });
                         break;

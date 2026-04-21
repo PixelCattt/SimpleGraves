@@ -10,22 +10,16 @@
 
 
 ## 🎯 Features
-- **Grave System for Players**  
+- **Grave System for Players**
 When players die, their items and XP are safely stored in a Grave so they don't despawn.
 
-####
-
-- **Grave-Info Command**  
+- **Grave-Info Command**
 Players can easily check the location of their graves, helping them recover items without wandering aimlessly.
 
-####
-
-- **Admin Grave Management**  
+- **Admin Grave Management**
 Admins can list, inspect, teleport to, or remove graves. This makes it easy to help players or keep the world clean from abandoned graves.
 
-####
-
-- **Configurable Grave Behavior**  
+- **Configurable Grave Behavior**
 Decide whether Graves can be looted by other players, how much XP gets stored in them, and more.
 
 

@@ -1,6 +1,6 @@
 # # # # # # # # # # # # # # # # #
 #  SimpleGraves  Configuration  #
-#         By Flummidill         #
+#         By  PixelCatt         #
 # # # # # # # # # # # # # # # # #
 
 # Allow breaking other Player's Graves (Default: true)
@@ -16,9 +16,10 @@ max-stored-xp: 25
 delete-vanishing-items: false
 
 # Protect Player Heads that aren't a Grave from being destroyed by Water (Default: true)
-# Recommended to enable this for BIG Performance Improvements
+# Recommended to ENABLE this for BIG Performance Improvements
 # Must be true or false
 non-grave-player-head-water-protection: true
+
 
 # The Config Version
 # Do not change this Value

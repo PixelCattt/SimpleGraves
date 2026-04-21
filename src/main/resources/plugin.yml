@@ -8,9 +8,14 @@ commands:
     usage: /graveinfo <number>
     permission: simplegraves.graveinfo
     permission-message: You do not have access to this command.
+  graveitems:
+    description: See the Items in your Grave.
+    usage: /graveinfo <number>
+    permission: simplegraves.graveinfo
+    permission-message: You do not have access to this command.
   graveadmin:
     description: Admin commands for SimpleGraves.
-    usage: /graveadmin <go|list|info|remove> [<player>] [<number>]
+    usage: /graveadmin <go|list|info|items|remove> [<player>] [<number>]
     permission: simplegraves.graveadmin.show
     permission-message: You do not have access to this command.
 permissions:
@@ -19,8 +24,12 @@ permissions:
     default: true
     children:
       simplegraves.graveinfo: true
+      simplegraves.graveitems: true
   simplegraves.graveinfo:
     description: Allows use of the GraveInfo Command
+    default: true
+  simplegraves.graveitems:
+    description: Allows use of the GraveItems Command
     default: true
 
   simplegraves.admin:
@@ -35,6 +44,7 @@ permissions:
       simplegraves.graveadmin.go: true
       simplegraves.graveadmin.list: true
       simplegraves.graveadmin.info: true
+      simplegraves.graveadmin.items: true
       simplegraves.graveadmin.remove: true
       simplegraves.graveadmin.show: true
   simplegraves.graveadmin.go:
@@ -49,6 +59,11 @@ permissions:
       simplegraves.graveadmin.show: true
   simplegraves.graveadmin.info:
     description: Allows use of the GraveAdmin Info Command
+    default: op
+    children:
+      simplegraves.graveadmin.show: true
+  simplegraves.graveadmin.items:
+    description: Allows use of the GraveAdmin Items Command
     default: op
     children:
       simplegraves.graveadmin.show: true

@@ -6,7 +6,7 @@
 
     <groupId>com.pixelcatt.simplegraves</groupId>
     <artifactId>SimpleGraves</artifactId>
-    <version>1.4.1</version>
+    <version>1.4.2</version>
     <packaging>jar</packaging>
 
     <name>SimpleGraves</name>
@@ -18,9 +18,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.21.10-R0.1-SNAPSHOT</version>
+            <groupId>com.pixelcatt.offlineplayerlib</groupId>
+            <artifactId>OfflinePlayerLib</artifactId>
+            <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -31,7 +31,6 @@ public class BlockBreakListener implements Listener {
         Player player = event.getPlayer();
         Location loc = event.getBlock().getLocation();
 
-        manager.saveOfflinePlayer(player.getUniqueId(), player.getName());
 
         if (loc.getBlock().getType() == Material.PLAYER_HEAD) {
             if (manager.graveExistsLoc(loc)) {

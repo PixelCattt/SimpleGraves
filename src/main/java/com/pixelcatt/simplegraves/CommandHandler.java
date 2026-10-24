@@ -31,7 +31,6 @@ public class CommandHandler implements CommandExecutor {
 
         Player player = (Player) sender;
 
-        manager.saveOfflinePlayer(player.getUniqueId(), player.getName());
 
         String cmd = command.getName().toLowerCase();
 
@@ -124,9 +123,9 @@ public class CommandHandler implements CommandExecutor {
                 Bukkit.getScheduler().runTask(plugin, () ->
                         player.sendMessage("§aGrave #" + graveNumber + " is Located at:" +
                                 "\n§9World: §c" + worldName +
-                                "\n§9X: §c" + Math.floor(location.getX()) +
-                                "\n§9Y: §c" + Math.floor(location.getY()) +
-                                "\n§9Z: §c" + Math.floor(location.getZ()))
+                                "\n§9X: §c" + (int) location.getX() +
+                                "\n§9Y: §c" + (int) location.getY() +
+                                "\n§9Z: §c" + (int) location.getZ())
                 );
             });
         });
@@ -330,9 +329,9 @@ public class CommandHandler implements CommandExecutor {
                             Bukkit.getScheduler().runTask(plugin, () ->
                                     sender.sendMessage("§a" + targetNameFinal + "'s Grave #" + finalGraveNumber + " is Located at:" +
                                             "\n§9World: §c" + worldName +
-                                            "\n§9X: §c" + Math.floor(location.getX()) +
-                                            "\n§9Y: §c" + Math.floor(location.getY()) +
-                                            "\n§9Z: §c" + Math.floor(location.getZ())));
+                                            "\n§9X: §c" + (int) location.getX() +
+                                            "\n§9Y: §c" + (int) location.getY() +
+                                            "\n§9Z: §c" + (int) location.getZ()));
                         });
                     });
                     break;
@@ -401,15 +400,14 @@ public class CommandHandler implements CommandExecutor {
         }
 
         // Offline Target handling
-        manager.getOfflinePlayerUUIDAsync(targetNameFinal).thenAccept(uuid -> {
-            manager.getOfflinePlayerName(uuid).thenAccept(name -> {
-                if (uuid == null) {
+        plugin.getOfflinePlayerLib().GetOfflinePlayerByName(targetNameFinal).thenAccept(target -> {
+                if (target == null) {
                     Bukkit.getScheduler().runTask(plugin, () ->
                             sender.sendMessage("§cPlayer '" + targetNameFinal + "' not found."));
                     return;
                 }
-                final UUID targetUUID = uuid;
-                final String targetName = name;
+                final UUID targetUUID = target.getUniqueId();
+                final String targetName = target.getName();
 
                 int graveNumber = -1;
                 if (!numberStrFinal.equals("-1") && !numberStrFinal.equals("*")) {
@@ -479,9 +477,9 @@ public class CommandHandler implements CommandExecutor {
                                 Bukkit.getScheduler().runTask(plugin, () ->
                                         sender.sendMessage("§a" + targetName + "'s Grave #" + finalGraveNumber + " is Located at:" +
                                                 "\n§9World: §c" + worldName +
-                                                "\n§9X: §c" + Math.floor(location.getX()) +
-                                                "\n§9Y: §c" + Math.floor(location.getY()) +
-                                                "\n§9Z: §c" + Math.floor(location.getZ())));
+                                                "\n§9X: §c" + (int) location.getX() +
+                                                "\n§9Y: §c" + (int) location.getY() +
+                                                "\n§9Z: §c" + (int) location.getZ()));
                             });
                         });
                         break;
@@ -546,7 +544,6 @@ public class CommandHandler implements CommandExecutor {
                         }
                         break;
                 }
-            });
         });
 
         return true;

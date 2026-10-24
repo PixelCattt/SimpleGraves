@@ -26,7 +26,6 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
             Player player = (Player) sender;
             UUID uuid = player.getUniqueId();
 
-            manager.saveOfflinePlayer(uuid, player.getName());
 
             String cmd = command.getName().toLowerCase();
 
@@ -53,6 +52,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
     }
 
     private List<String> autocompleteGraveAdmin(Player sender, String[] args) {
+        plugin.refreshOfflinePlayerNames();
         if (args.length == 1) {
             String prefix = args[0].toLowerCase();
 
@@ -87,8 +87,8 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
                 }
             }
 
-            List<String> offlinePlayerNames = manager.getOfflinePlayerNameList();
-            for (String name : offlinePlayerNames) {
+            plugin.refreshOfflinePlayerNames();
+            for (String name : plugin.getOfflinePlayerNames().values()) {
                 if (!playerNames.contains(name)) {
                     playerNames.add(name);
                 }
@@ -112,10 +112,11 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
 
             if (target != null) {
                 playerUUID = target.getUniqueId();
-            } else if (manager.getOfflinePlayerUUID(playerName) != null) {
-                playerUUID = manager.getOfflinePlayerUUID(playerName);
             } else {
-                return Collections.emptyList();
+                playerUUID = plugin.getOfflinePlayerNames().entrySet().stream()
+                        .filter(entry -> entry.getValue().equalsIgnoreCase(playerName))
+                        .map(Map.Entry::getKey).findFirst().orElse(null);
+                if (playerUUID == null) return Collections.emptyList();
             }
 
             if (subcommand.equals("list")) {

@@ -4,11 +4,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,23 +26,15 @@ public class PlayerDeathListener implements Listener {
     }
 
 
-    @EventHandler
-    public void onEntityDeath(EntityDeathEvent event) {
-        Entity entity = event.getEntity();
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
 
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
-
-            manager.saveOfflinePlayer(player.getUniqueId(), player.getName());
-
-            Location graveLocation = getValidGraveLocation(player.getLocation());
-            if (graveLocation == null) {
-                player.sendMessage("§aIt's your Lucky Day!");
-                player.sendMessage("§cSimpleGraves was unable to place your Grave!");
-                player.sendMessage("§aBecause of this, you can keep your Items!");
-            } else {
-                manager.createGrave(player, graveLocation);
-            }
+        Location graveLocation = getValidGraveLocation(player.getLocation());
+        if (graveLocation == null || !manager.createGrave(event, graveLocation)) {
+            player.sendMessage("§aIt's your Lucky Day!");
+            player.sendMessage("§cSimpleGraves was unable to place your Grave!");
+            player.sendMessage("§aBecause of this, you can keep your Items!");
         }
     }
 

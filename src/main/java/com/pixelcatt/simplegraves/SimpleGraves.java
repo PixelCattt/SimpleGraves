@@ -1,5 +1,8 @@
 package com.pixelcatt.simplegraves;
 
+import com.pixelcatt.offlineplayerlib.CachedOfflinePlayer;
+import com.pixelcatt.offlineplayerlib.OfflinePlayerLib;
+import org.bukkit.GameRule;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -12,6 +15,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class SimpleGraves extends JavaPlugin {
@@ -22,11 +28,16 @@ public class SimpleGraves extends JavaPlugin {
     private PlayerDeathListener playerDeathListener;
     private BlockBreakListener blockBreakListener;
     private GraveProtector graveProtector;
+    private OfflinePlayerLib offlinePlayerLib;
+    private final Map<UUID, String> offlinePlayerNames = new ConcurrentHashMap<>();
+    private volatile long offlinePlayerNamesLastRefresh;
 
 
     @Override
     public void onEnable() {
         getLogger().info("~ Created by PixelCatt ~");
+        offlinePlayerLib = (OfflinePlayerLib) getServer().getPluginManager().getPlugin("OfflinePlayerLib");
+        refreshOfflinePlayerNames();
 
         // Initialize Database-Worker
         getLogger().info("Initializing Database-Worker...");
@@ -56,10 +67,25 @@ public class SimpleGraves extends JavaPlugin {
         BukkitRunnable onLoad = new BukkitRunnable() {
             @Override
             public void run() {
-                executeConsoleCommand("gamerule keep_inventory true");
+                getServer().getWorlds().forEach(world -> world.setGameRule(GameRule.KEEP_INVENTORY, true));
             }
         };
         onLoad.runTaskLater(this, 1L);
+    }
+
+    public OfflinePlayerLib getOfflinePlayerLib() { return offlinePlayerLib; }
+
+    public Map<UUID, String> getOfflinePlayerNames() { return Map.copyOf(offlinePlayerNames); }
+
+    public void refreshOfflinePlayerNames() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - offlinePlayerNamesLastRefresh < 5000) return;
+        offlinePlayerNamesLastRefresh = currentTime;
+        offlinePlayerLib.GetAllOfflinePlayers().thenAccept(players -> {
+            for (CachedOfflinePlayer player : players) {
+                if (player.getName() != null) offlinePlayerNames.put(player.getUniqueId(), player.getName());
+            }
+        });
     }
 
 
@@ -228,6 +254,7 @@ public class SimpleGraves extends JavaPlugin {
     @Override
     public void onDisable() {
         dbWorker.shutdown();
+        manager.close();
     }
 
 

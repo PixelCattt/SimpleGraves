@@ -2,6 +2,7 @@ name: SimpleGraves
 main: com.pixelcatt.simplegraves.SimpleGraves
 version: ${project.version}
 api-version: 1.21
+depend: [OfflinePlayerLib]
 commands:
   graveinfo:
     description: See Information about your Grave.

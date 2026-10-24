@@ -12,6 +12,7 @@ import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class GraveManager {
     public final Executor dbWorker;
 
     private final File dbFile;
+    private final Object databaseLock = new Object();
     private Connection connection;
 
     private int xpLimit = 910;
@@ -39,7 +41,11 @@ public class GraveManager {
     public GraveManager(SimpleGraves plugin, DatabaseWorker dbWorker) {
         this.plugin = plugin;
 
-        this.dbWorker = query -> dbWorker.getDatabaseExecutor().execute(query);
+        this.dbWorker = query -> dbWorker.getDatabaseExecutor().execute(() -> {
+            synchronized (databaseLock) {
+                query.run();
+            }
+        });
         this.dbFile = new File(plugin.getDataFolder(), "graves.db");
         openConnection();
         createTables();
@@ -54,6 +60,10 @@ public class GraveManager {
                 }
                 Class.forName("org.sqlite.JDBC");
                 connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute("PRAGMA busy_timeout = 5000");
+                    stmt.execute("PRAGMA journal_mode = WAL");
+                }
             } catch (Exception e) {
                 plugin.getLogger().severe("Could not connect to SQLite database!");
                 e.printStackTrace();
@@ -77,11 +87,6 @@ public class GraveManager {
                         "items TEXT NOT NULL," +
                         "xp DOUBLE NOT NULL)");
 
-                // Offline-Players Table
-                stmt.executeUpdate("CREATE TABLE IF NOT EXISTS offline_players (" +
-                        "uuid TEXT NOT NULL," +
-                        "plr_name TEXT NOT NULL UNIQUE," +
-                        "PRIMARY KEY(uuid))");
             } catch (SQLException e) {
                 plugin.getLogger().severe("Failed to create tables in SQLite database.");
                 e.printStackTrace();
@@ -89,7 +94,9 @@ public class GraveManager {
         });
     }
 
-    public void createGrave(Player player, Location loc) {
+    public boolean createGrave(PlayerDeathEvent event, Location loc) {
+        synchronized (databaseLock) {
+        Player player = event.getEntity();
         UUID uuid = player.getUniqueId();
         int graveNum = 1;
 
@@ -117,7 +124,7 @@ public class GraveManager {
             if (loc.getWorld() == null) {
                 player.sendMessage("§cFailed to create Grave!");
                 plugin.getLogger().warning("Failed to create Grave for Player \"" + uuid + "\": Failed to determine Player's Dimension");
-                return;
+                return false;
             } else {
                 ps.setString(3, loc.getWorld().getName());
             }
@@ -184,11 +191,13 @@ public class GraveManager {
 
             ps.executeUpdate();
 
-            // Clear Inventory + XP
-            player.getInventory().clear();
-            player.setTotalExperience(0);
-            player.setLevel(0);
-            player.setExp(0);
+            event.setKeepInventory(false);
+            event.getDrops().clear();
+            event.setDroppedExp(0);
+            event.setKeepLevel(false);
+            event.setNewExp(0);
+            event.setNewLevel(0);
+            event.setNewTotalExp(0);
 
             // Place Gravestone
             String worldName;
@@ -208,7 +217,11 @@ public class GraveManager {
                     break;
             }
 
-            plugin.executeConsoleCommand("tellraw " + player.getName() + " " + "[{\"text\":\"Your Grave \",\"color\":\"white\"},{\"text\":\"#" + graveNum + "\",\"color\":\"gold\"},{\"text\":\" is Located at \",\"color\":\"white\"},{\"text\":\"" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ() + "\",\"color\":\"gold\"},{\"text\":\" in \",\"color\":\"white\"}," + worldName + "]");
+            String graveLocX = String.valueOf(loc.getBlockX() < 0 ? loc.getBlockX() + 1 : loc.getBlockX());
+            String graveLocY = String.valueOf(loc.getBlockY());
+            String graveLocZ = String.valueOf(loc.getBlockZ() < 0 ? loc.getBlockZ() + 1 : loc.getBlockZ());
+
+            plugin.executeConsoleCommand("tellraw " + player.getName() + " " + "[{\"text\":\"Your Grave \",\"color\":\"white\"},{\"text\":\"#" + graveNum + "\",\"color\":\"gold\"},{\"text\":\" is Located at \",\"color\":\"white\"},{\"text\":\"" + graveLocX + ", " + graveLocY + ", " + graveLocZ + "\",\"color\":\"gold\"},{\"text\":\" in \",\"color\":\"white\"}," + worldName + "]");
 
             Block block = loc.getBlock();
             block.setType(Material.PLAYER_HEAD);
@@ -219,9 +232,12 @@ public class GraveManager {
             Skull skull = (Skull) block.getState();
             skull.setOwningPlayer(player);
             skull.update();
+            return true;
 
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
+        }
         }
     }
 
@@ -246,6 +262,7 @@ public class GraveManager {
     }
 
     public boolean graveExistsLoc(Location loc) {
+        synchronized (databaseLock) {
         try (PreparedStatement ps = connection.prepareStatement(
                 "SELECT 1 FROM graves WHERE world = ? AND x =? AND y = ? AND z = ?")) {
 
@@ -275,9 +292,11 @@ public class GraveManager {
         }
 
         return false;
+        }
     }
 
     public List<String> getGraveNumberList(UUID uuid) {
+        synchronized (databaseLock) {
         List<String> graveNumberList = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement("SELECT grave_num FROM graves WHERE uuid = ?")) {
             ps.setString(1, uuid.toString());
@@ -292,6 +311,7 @@ public class GraveManager {
         }
 
         return graveNumberList;
+        }
     }
 
     public CompletableFuture<List<String>> getGraveNumberListAsync(UUID uuid) {
@@ -498,6 +518,7 @@ public class GraveManager {
     }
 
     public UUID getGraveOwnerUUID(Location loc) {
+        synchronized (databaseLock) {
         if (loc == null || loc.getWorld() == null) {
             return null;
         }
@@ -522,6 +543,7 @@ public class GraveManager {
             e.printStackTrace();
         }
         return null;
+        }
     }
 
     public void breakGrave(Location loc) {
@@ -805,125 +827,17 @@ public class GraveManager {
         }
     }
 
-    public void saveOfflinePlayer(UUID uuid, String playerName) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                // Check If UUID already exists
-                boolean uuidExists = false;
-                PreparedStatement ps1 = connection.prepareStatement(
-                        "SELECT 1 FROM offline_players WHERE uuid = ? LIMIT 1");
-                ps1.setString(1, uuid.toString());
-                ResultSet rs1 = ps1.executeQuery();
-                if (rs1.next()) {
-                    uuidExists = true;
-                }
-
-                // Check If the Player Name already exists
-                boolean nameExists = false;
-                PreparedStatement ps2 = connection.prepareStatement(
-                        "SELECT 1 FROM offline_players WHERE plr_name = ? LIMIT 1");
-                ps2.setString(1, playerName);
-                ResultSet rs2 = ps2.executeQuery();
-                if (rs2.next()) {
-                    nameExists = true;
-                }
-
-                // Delete Row with UUID if uuidExists = true
-                if (uuidExists) {
-                    PreparedStatement ps3 = connection.prepareStatement(
-                            "DELETE FROM offline_players WHERE uuid = ?");
-                    ps3.setString(1, uuid.toString());
-                    ps3.executeUpdate();
-                }
-
-                // Delete Row with Name if nameExists = true
-                if (nameExists) {
-                    PreparedStatement ps4 = connection.prepareStatement(
-                            "DELETE FROM offline_players WHERE plr_name = ?");
-                    ps4.setString(1, playerName);
-                    ps4.executeUpdate();
-                }
-
-                // Insert new UUID and Name
-                PreparedStatement ps5 = connection.prepareStatement(
-                        "REPLACE INTO offline_players(uuid, plr_name) VALUES (?, ?)");
-                ps5.setString(1, uuid.toString());
-                ps5.setString(2, playerName);
-                ps5.executeUpdate();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    public List<String> getOfflinePlayerNameList() {
-        List<String> list = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement("SELECT DISTINCT plr_name FROM offline_players")) {
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                String name = rs.getString("plr_name");
-                if (name != null) {
-                    list.add(name);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    public UUID getOfflinePlayerUUID(String playerName) {
-        try (PreparedStatement ps = connection.prepareStatement("SELECT uuid FROM offline_players WHERE plr_name = ?")) {
-            ps.setString(1, playerName);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                String uuid = rs.getString("uuid");
-                if (uuid != null) {
-                    return UUID.fromString(uuid);
-                } else {
-                    return null;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public CompletableFuture<UUID> getOfflinePlayerUUIDAsync(String playerName) {
-        return CompletableFuture.supplyAsync(() -> {
-            try (PreparedStatement ps = connection.prepareStatement("SELECT uuid FROM offline_players WHERE plr_name = ?")) {
-                ps.setString(1, playerName);
-                ResultSet rs = ps.executeQuery();
-                if (rs.next()) {
-                    String uuid = rs.getString("uuid");
-                    if (uuid != null) {
-                        return UUID.fromString(uuid);
-                    }
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            return null;
-        });
-    }
-
-    public CompletableFuture<String> getOfflinePlayerName(UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> {
-            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM offline_players WHERE uuid = ?")) {
-                ps.setString(1, uuid.toString());
-                ResultSet rs = ps.executeQuery();
-                if (rs.next()) {
-                    return rs.getString("plr_name");
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            return null;
-        });
-    }
-
     public void deleteVanishingItems() {
         this.delete_vanishing_items = true;
+    }
+
+    public void close() {
+        synchronized (databaseLock) {
+            try {
+                if (connection != null && !connection.isClosed()) connection.close();
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Could not close SQLite database: " + e.getMessage());
+            }
+        }
     }
 }

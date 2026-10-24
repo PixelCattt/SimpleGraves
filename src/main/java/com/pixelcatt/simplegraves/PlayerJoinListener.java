@@ -31,7 +31,6 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        manager.saveOfflinePlayer(player.getUniqueId(), player.getName());
 
         if (sendUpdateNotification && player.isOp()) {
             // Prefix
